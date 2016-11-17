@@ -6,8 +6,12 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "body-parser": "^1.15.2",
     "cfenv": "^1.0.3",
-    "express": "^4.13.4"
+    "csvjson": "^2.2.2",
+    "express": "^4.13.4",
+    "fs": "0.0.1-security",
+    "underscore": "^1.8.3"
   },
   "repository": {},
   "engines": {

@@ -2,25 +2,47 @@
 <html>
 
   <head>
-    <title>NodeJS Starter Application</title>
+    <title>Favoris MBO</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="stylesheets/style.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
   </head>
 
   <body>
-    <table>
-      <tr>
-        <td style= "width:30%;">
-          <img class = "newappIcon" src="images/newapp-icon.png">
-        </td>
-        <td>
-          <h1 id="message">Hello World!</h1>
-          <p class='description'></p> Thanks for creating a <span class = "blue">NodeJS Starter Application</span>.
-        </td>
-      </tr>
-    </table>
+    <div class="container">
+      <h1 id="message">Welcome to Favoris MBO site</h1>
+      <p>Please enter your credentials to access due diligence</p>
+      
+      <form action='/login' method='post'>
+        <label>Entity</label><br>
+        <input type="text" name="entity" placeholder="Enter entity name"><br>
+        <label>Password</label><br>
+        <input type="text" name="password" placeholder="Enter password"><br>
+        <input type="submit" value='Submit'>
+      </form>
+      
+      <h3>Revenue growth assumption</h3>
+      <input type="number" min="-0.05" max="0.05" step=0.01 id="revGrowth-input" placeholder ="Revenue growth rate">
+      <input type="submit" id="revGrowth-submit" value="Submit">
+      <input type="submit" id="revGrowth-reset" value="Reset">
+      
+      
+      <div id="total_revenues_container">
+      </div>
+      
+      <div id="gross_profit_container" class="chart">
+        <h2>Gross Profits</h2>
+      </div>
+      
+      <div id='circles_container'>
+        <svg id="svg_circles" class="chart"></svg>
+      </div>
+    
+    </div>
+    <script type="text/javascript" src="/js/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="/js/script.js"></script>
   </body>
 
 </html>
