@@ -204,8 +204,33 @@ function updateRevenueChart(data) {
 }    
 
 
-function createRevenueSplitChart(data) {
+function createRevenueSplitChart(unfiltered_data) {
+        // define the div for the tooltip
+        var div = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
         
+        // set up the fields we want on the stacked bar chart
+        var fields = ['Year','Stream_stand_alone_total','Stream_suite_total','Stream_blue','Trans_stand_alone','Trans_suite_total',
+                      'Trans_blue'];
+        
+        // data will be the array of filtered data.
+        var data = [];
+        
+        // bring the data over, or replace it with 0 if none exists.
+        unfiltered_data.forEach(function(d) {
+                var filterYear = {};
+                for (var i = 0; i< fields.length; i++) {
+                        if (d[fields[i]]) {
+                                filterYear[fields[i]] = d[fields[i]];
+                        } else {
+                                filterYear[fields[i]] = 0;    
+                        }
+                }
+                data.push(filterYear);
+                });
+       
         // set the dimensions and margins of the visible graph
         var margin = {top: 20, right: 30, bottom: 30, left: 40};
         var width = revChartDim.width - margin.left - margin.right;
@@ -218,8 +243,7 @@ function createRevenueSplitChart(data) {
         var revenueSplitChartFrame = d3.select("#svg_revenue_split_container")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom);
-        
-        
+
         var g = revenueSplitChartFrame
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -236,88 +260,80 @@ function createRevenueSplitChart(data) {
                 .range(["#a31c88", "#bb47be", "#f08edb",  "#b5ff7d", "#52d681", "#00ad7c"]);
 
         var stack = d3.stack();
+       
+        // set up the domains of the axes
+        x.domain(data.map(function(d) { return d.Year; }));
+        //y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+        y.domain([0,60]);
+        // hard coded the y domain to a magic number as I don't want the axes re-scaling.
+        z.domain(Object.keys(data[0]).slice(1));
+       
+        debugger;
+        g.selectAll(".serie")
+          .data(stack.keys(Object.keys(data[0]).slice(1))(data))
+          .enter().append("g")
+            .attr("class", "serie")
+            .attr("fill", function(d) { return z(d.key); })
+          .selectAll("rect")
+          .data(function(d) { return d; })
+          .enter().append("rect")
+            .attr("x", function(d) { return x(d.data.Year); })
+            .attr("y", function(d) { return y(d[1]); })
+            .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+            .attr("width", x.bandwidth())
+            .on("mousemove", function(d) {		
+                div.transition()		
+                    //.duration(200)		
+                    .style("opacity", .9);		
+                div.html(d)	
+                    .style("left", (d3.event.pageX) + "px")		
+                    .style("top", (d3.event.pageY - 28) + "px");
+                console.log(d);
+                })					
+                .on("mouseout", function(d) {		
+                    div.transition()		
+                        //.duration(500)		
+                        .style("opacity", 0);	
+                });
+
+      
+        g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+      
+      var yAxis = g.append("g")
+        .attr("class","axis", "y-axis")
+        .call(d3.axisLeft(y))
+        .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr('x', 0)
+                .attr("y", -30)
+                .attr("dy", "1em")
+                .style("text-anchor", "end")
+                .text("$m");
         
-        d3.csv("/data/origData.csv", function(d) {
-        return {
-                Year: +d.Year,
-                Stream_stand_alone_total: + d.Stream_stand_alone_total,
-                Stream_suite_total: +d.Stream_suite_total,
-                Stream_blue: +d.Stream_blue,
-                Trans_stand_alone: +d.Trans_stand_alone,
-                Trans_suite_total: +d.Trans_suite_total,
-                Trans_blue: +d.Trans_blue,
-                
-                };
-        }, function(error, data){
-                if (error) throw error;
-                
-                
-                x.domain(data.map(function(d) { return d.Year; }));
-                y.domain([0,60]);
-                //y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
-                z.domain(Object.keys(data[0]).slice(1));
-                //z.domain(data.columns.slice(1));
-              
-                debugger;
-                g.selectAll(".serie")
-                  .data(stack.keys(Object.keys(data[0]).slice(1))(data))
-                  //.data(stack.keys(data.columns.slice(1))(data))
-                  .enter().append("g")
-                    .attr("class", "serie")
-                    .attr("fill", function(d) { return z(d.key); })
-                  .selectAll("rect")
-                  .data(function(d) { return d; })
-                  .enter().append("rect")
-                    .attr("x", function(d) { return x(d.data.Year); })
-                    .attr("y", function(d) { return y(d[1]); })
-                    .attr("height", function(d) { return y(d[0]) - y(d[1]); })
-                    .attr("width", x.bandwidth());
-              
-                g.append("g")
-                    .attr("class", "axis axis--x")
-                    .attr("transform", "translate(0," + height + ")")
-                    .call(d3.axisBottom(x));
-              
-              var yAxis = g.append("g")
-                .attr("class","axis", "y-axis")
-                .call(d3.axisLeft(y))
-                .append("text")
-                        .attr("transform", "rotate(-90)")
-                        .attr('x', 0)
-                        .attr("y", -30)
-                        .attr("dy", "1em")
-                        .style("text-anchor", "end")
-                        .text("$m");
-                
-              
-                var legend = g.selectAll(".legend")
-                  .data (Object.keys(data[0]).slice(1).reverse())
-                  //.data(data.columns.slice(1).reverse())
-                  .enter().append("g")
-                    .attr("class", "legend")
-                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
-                    .style("font", "10px sans-serif");
-              
-                legend.append("rect")
-                    .attr("x", width - 150)
-                    .attr("width", 150)
-                    .attr("height", 18)
-                    .attr("fill", z);
-              
-                legend.append("text")
-                    .attr("x", width - 2)
-                    .attr("y", 9)
-                    .attr("dy", ".35em")
-                    .attr("text-anchor", "end")
-                    .text(function(d) { return d; });
-              }); 
-              
-              function type(d, i, columns) {
-                for (i = 1, t = 0; i < d.length; ++i) t += d[columns[i]] = +d[columns[i]];
-                d.total = t;
-                return d;
-                }  
-                
+      
+        var legend = g.selectAll(".legend")
+          .data (Object.keys(data[0]).slice(1).reverse())
+          //.data(data.columns.slice(1).reverse())
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
+            .style("font", "10px sans-serif");
+      
+        legend.append("rect")
+            .attr("x", width - 150)
+            .attr("width", 150)
+            .attr("height", 18)
+            .attr("fill", z);
+      
+        legend.append("text")
+            .attr("x", width - 2)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .attr("text-anchor", "end")
+            .text(function(d) { return d; });
         }
         
 
