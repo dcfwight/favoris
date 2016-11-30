@@ -70,14 +70,14 @@ h1 {
   color: white;
 }
 
-.chart rect {
+.revenue_rect {
   fill: steelblue;
 }
 
 .chart text {
   fill: white;
   font: 10px sans-serif;
-  text-anchor: middle;
+  text-anchor: end;
 }
 
 
