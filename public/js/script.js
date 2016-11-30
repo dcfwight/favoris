@@ -8,10 +8,14 @@ $(document).ready(function() {
     $('#revGrowth-submit').on('click', function() {
         var revGrowthInput = parseFloat($revGrowthInput.val());
         console.log('revGrowthInput is');
+        console.log(revGrowthInput);
         updateRevenues(current_data, revGrowthInput, function(updatedData) {
+            //createTotalRevenueChart(updatedData);
+            debugger;
             updateRevenueChart(updatedData);
         });
         console.log(current_data);
+        //createTotalRevenueChart(current_data);
         updateRevenueChart(current_data);
     });
     $('#revGrowth-reset').on('click', function() {
@@ -66,15 +70,78 @@ function filterData(unfiltered_data, fields) {
 }
 
 
+// these are fixed variables while I play around with the construct data function
+var revGrowthFixed = -0.05;
+var suiteConvertFixed = 0.05;
+var suiteConversionDownFactor = -0.72;
+var suiteConversionUpFactor = 0.099;
+
+
+function constructRevenues(historic_data, growth) {
+    
+    var constructedRevenues = historic_data.slice(0);
+    
+    for (var i = 4; i <19; i++) {
+        var yearData = {}
+        yearData.Year = i+2013;
+        yearData.Trans_suite_no_prior_tadz = constructedRevenues[i-1].Trans_suite_total*(1+growth);
+        
+        // Stream stand alone continuing is first grossed up by general growth rate
+        yearData.Stream_stand_alone_continuing = constructedRevenues[i-1].Stream_stand_alone_total*(1+growth);
+        // Next create a negative item for the stream standalone converted to suite
+        yearData.Stream_stand_alone_converted_to_suite_in_year = yearData.Stream_stand_alone_continuing*(-suiteConvertFixed);
+        // Finally add the two together to create the new stream total.
+        yearData.Stream_stand_alone_total = yearData.Stream_stand_alone_continuing+yearData.Stream_stand_alone_converted_to_suite_in_year;
+        // Stream blue is simply grossed up by general growth rate
+        yearData.Stream_blue = constructedRevenues[i-1].Stream_blue*(1+growth);
+        // Stream suite - first calculate the growth in existing stream suite revenu
+        yearData.Stream_suite_existing = constructedRevenues[i-1].Stream_suite_total*(1+growth);
+        // Stream suite - calculate the new stream suite from standalone which has converted to suite.
+        yearData.Stream_suite_converted_from_stand_alone_in_year = yearData.Stream_stand_alone_converted_to_suite_in_year*-(1+suiteConversionDownFactor);
+        // Add the two stream suites to get the total
+        yearData.Stream_suite_total = yearData.Stream_suite_existing+ yearData.Stream_suite_converted_from_stand_alone_in_year;
+        // Add all together to get total Stream Suite
+        yearData.Stream_total = yearData.Stream_suite_total + yearData.Stream_stand_alone_total + yearData.Stream_blue;
+        
+        // Transactional Blue is simply grossed up by general growth rate
+        yearData.Trans_blue = constructedRevenues[i-1].Trans_blue * (1+growth);
+        // Transactional Stand alone is grossed up by general growth rate
+        yearData.Trans_stand_alone = constructedRevenues[i-1].Trans_stand_alone * (1+growth);
+        // Transactional suite with no prior TADz is more complicated, as we don't have any historical figures
+        if (i ==4) {
+            yearData.Trans_suite_no_prior_tadz = constructedRevenues[i-1].Trans_suite_total * (1+growth);
+        } else {
+            yearData.Trans_suite_no_prior_tadz = constructedRevenues[i-1].Trans_suite_no_prior_tadz * (1+growth);    
+        }
+        // Transactional suite from stand-alone converted during the year
+        yearData.Trans_suite_converted_year = yearData.Stream_stand_alone_converted_to_suite_in_year * -(1+ suiteConversionUpFactor);
+        // Sum up the Transactional suite
+        yearData.Trans_suite_total = yearData.Trans_suite_converted_year + yearData.Trans_suite_no_prior_tadz;
+        // Sum up all Transactional
+        yearData.Trans_total = yearData.Trans_blue + yearData.Trans_stand_alone + yearData.Trans_suite_total;
+        
+        // Finally, sum up all Revenues
+        yearData.Revenue_total = yearData.Stream_total + yearData.Trans_total;
+        
+        constructedRevenues.push(yearData);
+    };
+    console.log(constructedRevenues);
+}
+
+
+
 
 function updateRevenues(data, growth) {
-    for (var i = 4; i < data.length; i++) {
+    for (var i = 4; i < 1; i++) {
         data[i].Revenue_total = Math.round(100 * (data[i - 1].Revenue_total * (1 + growth))) / 100;
     }
+    debugger;
     return data;
 }
 
 var $revGrowth = $('#revGrowth-input');
+
+
 
 var ORIGINAL_DATA = {};
 var HISTORIC_DATA = {};
@@ -85,6 +152,7 @@ d3.csv("/data/origData.csv", type, function(error, data) {
     ORIGINAL_DATA = data.slice(0);
     HISTORIC_DATA = data.slice(0,4);
     current_data = JSON.parse(JSON.stringify(data));
+    constructRevenues(HISTORIC_DATA, revGrowthFixed);
 
 });
 
@@ -133,7 +201,6 @@ function createTotalRevenueChart(unfiltered_data) {
     var height = revChartDim.height - margin.top - margin.bottom;
 
     //console.log ('data used in revenue chart is: ',data);
-
     filterData(unfiltered_data, ['Year', 'Revenue_total']).then(function(data) {
         // set the scales
         var x = d3.scaleBand()
