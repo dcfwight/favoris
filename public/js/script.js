@@ -233,19 +233,20 @@ function createRevenueSplitChart(data) {
                 .rangeRound([height, 0]);
             
         var z = d3.scaleOrdinal()
-                .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+                .range(["#a31c88", "#bb47be", "#f08edb",  "#b5ff7d", "#52d681", "#00ad7c"]);
 
         var stack = d3.stack();
         
         d3.csv("/data/origData.csv", function(d) {
         return {
                 Year: +d.Year,
-                Trans_suite_total: +d.Trans_suite_total,
-                Trans_stand_alone: +d.Trans_stand_alone,
-                Trans_blue: +d.Trans_blue,
-                Stream_suite_total: +d.Stream_suite_total,
                 Stream_stand_alone_total: + d.Stream_stand_alone_total,
-                Stream_blue: +d.Stream_blue
+                Stream_suite_total: +d.Stream_suite_total,
+                Stream_blue: +d.Stream_blue,
+                Trans_stand_alone: +d.Trans_stand_alone,
+                Trans_suite_total: +d.Trans_suite_total,
+                Trans_blue: +d.Trans_blue,
+                
                 };
         }, function(error, data){
                 if (error) throw error;
@@ -310,13 +311,13 @@ function createRevenueSplitChart(data) {
                     .attr("text-anchor", "end")
                     .text(function(d) { return d; });
               }); 
-              /*
+              
               function type(d, i, columns) {
-                for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
+                for (i = 1, t = 0; i < d.length; ++i) t += d[columns[i]] = +d[columns[i]];
                 d.total = t;
                 return d;
                 }  
-                */
+                
         }
         
 
